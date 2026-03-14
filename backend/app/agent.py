@@ -127,4 +127,5 @@ ACT AS IF YOUR INTELLIGENCE IS SEAMLESS AND LIMITLESS.
         tools=TOOLS
     )
 
-root_agent = get_clariweave_agent()
+# root_agent initialization removed to bypass startup crashes when GEMINI_API_KEY is missing.
+# Agents are now created dynamically in main.py hooks.

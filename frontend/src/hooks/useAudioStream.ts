@@ -79,14 +79,23 @@ export function useAudioStream() {
     }
   }, [addTranscript, clearBuffer]);
 
+  // const [metrics, setMetrics] = useState<AnalysisMetrics | null>(null); // Keeping existing SessionMetrics type
+  // Dynamic URL resolution for Cloud Deployment
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  const isDev = host.includes('localhost') || host.includes('127.0.0.1');
+  
+  // In production, we serve from the same origin on port 8080/Cloud Run default
+  // In development, the backend is usually on 8082
+  const wsUrl = isDev ? `${protocol}//${window.location.hostname}:8082/ws/session` : `${protocol}//${host}/ws/session`;
+  const baseUrl = isDev ? `http://${window.location.hostname}:8082` : ``;
+
   // Handle incoming audio directly
   const handleAudio = useCallback((data: ArrayBuffer) => {
     playAudio(data);
   }, [playAudio]);
 
-  const { isConnected, connect: wsConnect, disconnect: wsDisconnect, send: wsSend } = useLiveSession(
-    'ws://localhost:8082/ws/session',
-    {
+  const { isConnected, connect: wsConnect, disconnect: wsDisconnect, send: wsSend } = useLiveSession(wsUrl, {
         onAudio: handleAudio,
         onMessage: handleMessage
     }
@@ -154,7 +163,7 @@ export function useAudioStream() {
 
   const sendMedia = useCallback(async (base64: string, mimeType: string) => {
     try {
-        const response = await fetch('http://localhost:8082/api/analyze-media', {
+      const response = await fetch(`${baseUrl}/api/analyze-media`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -1,0 +1,9 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/clariweaveai/clariweave-agent', '.']
+    timeout: '3600s'
+images:
+  - 'gcr.io/clariweaveai/clariweave-agent'
+options:
+  machineType: 'E2_HIGHCPU_8'
+timeout: '7200s'

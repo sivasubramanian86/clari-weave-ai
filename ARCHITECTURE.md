@@ -1,6 +1,53 @@
 # ClariWeave AI Architecture
 
-ClariWeave is a premium, real-time multimodal mental wellness agent designed to transform overwhelming thoughts into actionable micro-hits of clarity using a specialized Agent Mesh powered by the Gemini Multimodal Live API via the Google Agent Development Kit (ADK).
+```mermaid
+graph TD
+    User((User))
+    
+    subgraph "Frontend (React + Vite)"
+        UI[Clara Hologram & UI]
+        Audio[AudioWorklet: PCM Converter]
+        Mesh[Mind Mesh Visualizer]
+        WS_Client[WebSocket Client / Fetch]
+    end
+    
+    subgraph "Google Cloud Run (Backend)"
+        FastAPI[FastAPI Orchestrator]
+        ADK[Google ADK Lifecycle]
+        Static[Static File Server]
+        
+        subgraph "Agent Mesh"
+            Coord[Clara Coordinator]
+            Linguist[The Linguist]
+            Weaver[The Weaver]
+            Analyst[The Analyst]
+            Archivist[The Archivist]
+        end
+    end
+    
+    subgraph "Google AI Services"
+        GeminiLive[Gemini Live API]
+        AudioModality[Native Audio Processing]
+        Flash[Gemini 2.0 Flash]
+    end
+
+    User <--> UI
+    UI --> Audio
+    Audio <--> WS_Client
+    WS_Client <--> FastAPI
+    FastAPI <--> ADK
+    ADK <--> GeminiLive
+    GeminiLive <--> AudioModality
+    ADK <--> Coord
+    Coord <--> Linguist
+    Coord <--> Weaver
+    Coord <--> Analyst
+    Coord <--> Archivist
+    Analyst --> Mesh
+    UI -.-> Static
+```
+
+ClariWeave is a premium, real-time multimodal mental wellness agent...
 
 ## Core Architecture
 

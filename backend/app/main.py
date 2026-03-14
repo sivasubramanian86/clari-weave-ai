@@ -5,6 +5,8 @@ import logging
 import uuid
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from google.genai import types
 from google import genai
 from dotenv import load_dotenv
@@ -20,6 +22,12 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 app = FastAPI()
+
+# Mount frontend assets
+frontend_path = os.path.join(os.getcwd(), "frontend", "dist")
+if os.path.exists(frontend_path):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="static")
+    logger.info(f"Mounted static assets from {frontend_path}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,11 +45,14 @@ from google.adk.sessions.in_memory_session_service import InMemorySessionService
 
 # Initialize global ADK components
 API_KEY = os.environ.get("GEMINI_API_KEY")
+client = None
 if API_KEY:
     os.environ["GOOGLE_API_KEY"] = API_KEY  # Ensure ADK/GenAI SDK finds it
     logger.info("GEMINI_API_KEY mirrored to GOOGLE_API_KEY for ADK compatibility")
+    client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1beta'})
+else:
+    logger.warning("GEMINI_API_KEY NOT FOUND. Application will have limited functionality.")
 
-client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1beta'})
 session_service = InMemorySessionService()
 
 # Global registry for active Live sessions to enable cross-talk from REST-to-WS
@@ -63,6 +74,9 @@ def analyze_media(payload: MediaPayload):
     import json
     import re
     try:
+        if not client:
+            return {"status": "error", "message": "Gemini API Key not configured. Please set GEMINI_API_KEY in environment."}
+        
         media_bytes = base64.b64decode(payload.data)
         
         # 1. Analyze with standard REST call
@@ -137,6 +151,11 @@ async def live_session(websocket: WebSocket):
     session_id = "default_session" # Keeping it simple for the hackathon hook
     
     try:
+        if not API_KEY:
+             await websocket.send_json({"error": "Gemini API Key not configured. Please set GEMINI_API_KEY in environment."})
+             await websocket.close()
+             return
+
         # 1. Setup ADK Agent and Runner
         clara_agent = get_clariweave_agent()
         runner = Runner(
@@ -301,6 +320,14 @@ async def live_session(websocket: WebSocket):
             await websocket.close()
         except:
             pass
+
+# SPA Fallback: Serve index.html for any unknown routes (for React Router)
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    index_path = os.path.join(os.getcwd(), "frontend", "dist", "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "Frontend not built. Please run npm run build."}
 
 if __name__ == "__main__":
     import uvicorn

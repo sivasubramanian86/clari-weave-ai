@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules
+venv
+backend/venv
+dist
+frontend/dist
+.env
+local_session_shards.json
+*.pyc
+__pycache__
