@@ -1,0 +1,8 @@
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+google-genai[aiohttp]>=0.3.0
+google-adk>=0.5.0
+google-cloud-firestore==2.14.0
+pydantic>=2.6.4
+python-multipart==0.0.9
+python-dotenv==1.0.1
