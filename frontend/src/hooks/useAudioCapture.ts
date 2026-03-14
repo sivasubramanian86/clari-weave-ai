@@ -31,7 +31,20 @@ export function useAudioCapture() {
         await audioContext.resume();
       }
 
+      // @ts-ignore - 'closed' is a valid state in modern browsers but missing in some TS typings
+      if (audioContext.state === 'closed') {
+        console.warn("DEBUG: AudioContext is closed, aborting capture setup");
+        return null;
+      }
+
       await audioContext.audioWorklet.addModule('/pcm-worker.js');
+      
+      // @ts-ignore - 'closed' is a valid state in modern browsers but missing in some TS typings
+      if (audioContext.state === 'closed') {
+        console.warn("DEBUG: AudioContext was closed during module loading");
+        return null;
+      }
+
       const source = audioContext.createMediaStreamSource(stream);
       const processor = new AudioWorkletNode(audioContext, 'pcm-processor');
       processorRef.current = processor; // No cast needed if ref type is updated

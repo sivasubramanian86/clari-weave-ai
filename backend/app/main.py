@@ -168,8 +168,7 @@ async def live_session(websocket: WebSocket):
         runner = Runner(
             app_name="ClariWeave", 
             agent=clara_agent, 
-            session_service=session_service,
-            auto_create_session=True
+            session_service=session_service
         )
         live_request_queue = LiveRequestQueue()
         active_sessions[session_id] = live_request_queue
