@@ -1,7 +1,20 @@
-import asyncio
+# 1. Environment and Logging Setup (MUST BE FIRST)
+from dotenv import load_dotenv
 import os
-import json
 import logging
+load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+API_KEY = os.environ.get("GEMINI_API_KEY")
+if API_KEY:
+    os.environ["GOOGLE_API_KEY"] = API_KEY  # Force ADK/GenAI SDK to see it
+    logger.info("GEMINI_API_KEY globally set to GOOGLE_API_KEY")
+
+# 2. Standard Imports
+import asyncio
+import json
 import uuid
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,17 +22,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from google.genai import types
 from google import genai
-from dotenv import load_dotenv
 
+# 3. Local Imports (After env is ready)
 from .agent import get_clariweave_agent
 from .tools import TOOLS
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Load environment variables
-load_dotenv()
 
 app = FastAPI()
 
@@ -43,13 +49,14 @@ from google.adk.agents.live_request_queue import LiveRequestQueue
 from google.adk.agents.run_config import RunConfig
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 
-# Initialize global ADK components
-API_KEY = os.environ.get("GEMINI_API_KEY")
+# Initialize global GenAI client
 client = None
 if API_KEY:
-    os.environ["GOOGLE_API_KEY"] = API_KEY  # Ensure ADK/GenAI SDK finds it
-    logger.info("GEMINI_API_KEY mirrored to GOOGLE_API_KEY for ADK compatibility")
-    client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1beta'})
+    try:
+        client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1beta'})
+        logger.info("GenAI Client initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize GenAI Client: {e}")
 else:
     logger.warning("GEMINI_API_KEY NOT FOUND. Application will have limited functionality.")
 
