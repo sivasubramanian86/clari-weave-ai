@@ -17,9 +17,10 @@ interface Props {
   onConnect: (type: 'mic' | 'camera' | 'screen') => void;
   onDisconnect: () => void;
   onFinish: () => void;
+  onTabChange: (tab: string) => void;
 }
 
-export function LiveTabs({ type, isConnected, audioLevel, transcript, ragStatus, stream, permissionError, onConnect, onDisconnect, onFinish }: Props) {
+export function LiveTabs({ type, isConnected, audioLevel, transcript, ragStatus, stream, permissionError, onConnect, onDisconnect, onFinish, onTabChange }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -168,7 +169,16 @@ export function LiveTabs({ type, isConnected, audioLevel, transcript, ragStatus,
           </div>
         </div>
 
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 flex flex-col gap-4">
+           <motion.button
+             initial={{ opacity: 0, y: -10 }}
+             animate={{ opacity: 1, y: 0 }}
+             onClick={() => onTabChange('live-insights')}
+             className="w-full py-3 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group shadow-lg shadow-emerald-500/20 hover:scale-[1.01]"
+           >
+             <Zap size={14} className="group-hover:animate-pulse" />
+             View Live Insights Dashboard
+           </motion.button>
            <TranscriptView transcript={transcript} />
         </div>
       </div>

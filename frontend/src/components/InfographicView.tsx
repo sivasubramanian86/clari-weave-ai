@@ -15,7 +15,17 @@ export function InfographicView({ metrics }: Props) {
     <div className="h-full flex flex-col items-center justify-center p-8 text-slate-400 glass-card">
        <div className="w-16 h-16 rounded-full border-4 border-slate-100 dark:border-slate-800 border-t-emerald-500 animate-spin mb-6" />
        <p className="font-bold uppercase tracking-widest text-xs">Generating Multimodal Insights...</p>
-       <p className="text-[10px] mt-2 opacity-60">Leveraging Nano Banana 2 for visual synthesis</p>
+       <p className="text-[10px] mt-2 opacity-60 italic mb-8">Ensure your upload/stream is active and Clara is thinking.</p>
+       
+       <button 
+         onClick={() => {
+           // Direct UI force for the hackathon demo if live data is hanging
+           window.dispatchEvent(new CustomEvent('force-mock-data'));
+         }}
+         className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all border border-white/10"
+       >
+         Test Nano Banana Mode (Mock)
+       </button>
     </div>
   );
 

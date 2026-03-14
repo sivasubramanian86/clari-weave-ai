@@ -89,7 +89,7 @@ Always cross-reference the Image (Visual Cues) with the Audio (Transcript) to fi
 """
 
 def get_orchestration_team() -> dict:
-    model_name = "gemini-2.5-flash-native-audio-latest"
+    model_name = "gemini-2.0-flash"
     config = types.GenerateContentConfig(response_modalities=[types.Modality.AUDIO])
     
     return {

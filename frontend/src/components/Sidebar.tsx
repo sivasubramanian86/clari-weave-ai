@@ -11,7 +11,8 @@ import {
   HelpCircle,
   LayoutDashboard,
   Database,
-  LogOut
+  LogOut,
+  Share2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PremiumLogo } from './PremiumLogo';
@@ -28,7 +29,9 @@ const navItems = [
   { id: 'upload-image', label: 'Upload Image', icon: ImageIcon, category: 'Upload' },
   { id: 'upload-audio', label: 'Upload Audio', icon: Music, category: 'Upload' },
   { id: 'upload-video', label: 'Upload Video', icon: Video, category: 'Upload' },
-  { id: 'analytics', label: 'Insights', icon: LayoutDashboard, category: 'System' },
+  { id: 'live-insights', label: 'Live Insights', icon: LayoutDashboard, category: 'System' },
+  { id: 'past-insights', label: 'Past Insights', icon: Database, category: 'System' },
+  { id: 'mind-mesh', label: 'Mind Mesh', icon: Share2, category: 'System' },
   { id: 'logs', label: 'Logs', icon: Database, category: 'System' },
   { id: 'history', label: 'Archive', icon: History, category: 'System' },
   { id: 'settings', label: 'Settings', icon: Settings, category: 'System' },

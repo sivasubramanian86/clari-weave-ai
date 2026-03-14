@@ -8,6 +8,7 @@ import { HistoryView } from './components/HistoryView';
 import { SettingsView } from './components/SettingsView';
 import { FAQView } from './components/FAQView';
 import { LogsView } from './components/LogsView';
+import { MindMeshView } from './components/MindMeshView';
 import { useAudioStream } from './hooks/useAudioStream';
 import { ClaraHologram } from './components/ClaraHologram';
 import { Sun, Moon } from 'lucide-react';
@@ -30,7 +31,8 @@ function App() {
     stream,
     connect, 
     disconnect,
-    finishSession
+    finishSession,
+    sendMedia
   } = useAudioStream();
 
   useEffect(() => {
@@ -46,19 +48,28 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'live-mic':
-        return <LiveTabs type="mic" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('mic')} onDisconnect={disconnect} onFinish={finishSession} />;
+        return <LiveTabs type="mic" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('mic')} onDisconnect={disconnect} onFinish={finishSession} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'live-camera':
-        return <LiveTabs type="camera" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('camera')} onDisconnect={disconnect} onFinish={finishSession} />;
+        return <LiveTabs type="camera" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('camera')} onDisconnect={disconnect} onFinish={finishSession} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'live-screen':
-        return <LiveTabs type="screen" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('screen')} onDisconnect={disconnect} onFinish={finishSession} />;
+        return <LiveTabs type="screen" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('screen')} onDisconnect={disconnect} onFinish={finishSession} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'upload-image':
-        return <UploadTabs type="image" />;
+        return <UploadTabs type="image" onUpload={sendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'upload-audio':
-        return <UploadTabs type="audio" />;
+        return <UploadTabs type="audio" onUpload={sendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'upload-video':
-        return <UploadTabs type="video" />;
-      case 'analytics':
+        return <UploadTabs type="video" onUpload={sendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
+      case 'live-insights':
         return <InfographicView metrics={metrics} />;
+      case 'past-insights':
+        return <InfographicView metrics={{
+          clarity_score: 85,
+          stress_level: 15,
+          topic_affinity: { "Productivity": 90, "Focus": 80, "Chaos": 10 },
+          action_readiness: "Optimized"
+        }} />;
+      case 'mind-mesh':
+        return <MindMeshView />;
       case 'logs':
         return <LogsView />;
       case 'history':
@@ -68,7 +79,7 @@ function App() {
       case 'faq':
         return <FAQView />;
       default:
-        return <LiveTabs type="mic" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('mic')} onDisconnect={disconnect} onFinish={finishSession} />;
+        return <LiveTabs type="mic" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('mic')} onDisconnect={disconnect} onFinish={finishSession} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
     }
   };
 
@@ -82,7 +93,7 @@ function App() {
 
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <ClaraHologram isConnected={isConnected} isSpeaking={transcript.length > 0} />
+      <ClaraHologram isConnected={isConnected} isSpeaking={transcript.length > 0} metrics={metrics} />
 
       <main className="flex-1 ml-64 p-8 relative z-10 overflow-x-hidden">
         <header className="flex justify-between items-center mb-12">

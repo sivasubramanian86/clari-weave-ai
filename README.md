@@ -1,4 +1,4 @@
-# ClariWeaveAI 织语
+# ClariWeaveAI
 
 **Unweaving Mental Chaos into Multimodal Clarity.**
 
@@ -10,14 +10,16 @@ ClariWeaveAI is a premium, real-time multimodal mental wellness agent designed t
 ## 🌟 Key Features
 
 - **Multimodal Uplink**: Simultaneous processing of audio (emotions/transcript) and video/images (visual context) for grounded reasoning.
+- **Emotion-Aware Hologram**: A reactive visual companion that pulses **Rose** when sensing stress and **Emerald** when the user attains focus, providing non-verbal validation.
+- **The "Mind Mesh" Visualizer**: A stunning, transparent map of Clara's "Neural Reasoning," showing the collaboration between specialized agents in real-time.
 - **Agent Mesh Architecture**:
   - **The Linguist**: Instant translation and transcription for 100+ languages.
   - **The Weaver**: Empathic specialist suggesting small, non-threatening micro-actions.
   - **The Archivist**: RAG-powered knowledge custodian connecting you to past sessions.
   - **The Analyst**: Quantifies your journey with real-time "Clarity Maps" and metrics.
   - **The Guardian**: Ensures PII protection and safe boundaries.
-- **Real-time Insights**: "Complete Session" to generate high-fidelity infographics based on your session flow.
-- **Privacy-First Logs**: Historical storage of Clarity Maps for long-term progress tracking.
+- **Dual Insights System**: Switch between **Live Insights** for your current session aura and **Past Insights** for historical growth patterns and archive wisdom.
+- **Proactive Intervention**: Clara doesn't just wait; she sees. She proactively identifies environmental stressors (like a messy desk) and gently guides you toward wellness.
 
 For an in-depth look at how the Gemini Multimodal Live API and Google ADK power this mesh, see the [ARCHITECTURE.md](ARCHITECTURE.md).
 

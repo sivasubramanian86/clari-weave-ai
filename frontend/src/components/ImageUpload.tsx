@@ -2,31 +2,53 @@ import { useState } from 'react';
 import { ImagePlus, X, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function ImageUpload() {
+interface Props {
+  onUpload: (base64: string, mimeType: string) => void;
+}
+
+export function ImageUpload({ onUpload }: Props) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const processFile = (file: File) => {
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Full = reader.result as string;
+      setImagePreview(base64Full);
+      const base64Data = base64Full.split(',')[1];
+      onUpload(base64Data, file.type);
+      setTimeout(() => setIsUploading(false), 2000); // Simulate processing time for UX
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      setIsUploading(true);
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        setImagePreview(base64);
-        try {
-          await fetch('http://localhost:8080/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64 })
-          });
-        } catch (err) {
-          console.error("Failed to upload image", err);
-        } finally {
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      processFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        processFile(file);
+      }
     }
   };
 
@@ -38,7 +60,7 @@ export function ImageUpload() {
           <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium tracking-tight">Show ClariWeave what matters</p>
         </div>
         {imagePreview && !isUploading && (
-          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 animate-pulse" />
         )}
       </div>
       
@@ -49,13 +71,16 @@ export function ImageUpload() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-slate-300 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:bg-emerald-50/10 transition-all group/label"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl cursor-pointer transition-all group/label ${isDragging ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-300 dark:border-slate-700/50 hover:border-emerald-400 dark:hover:border-emerald-500/50 hover:bg-emerald-50/10'}`}
             >
-              <div className="flex flex-col items-center justify-center p-5 text-slate-400 group-hover/label:text-emerald-500 dark:group-hover/label:text-emerald-400 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 group-hover/label:scale-110 transition-transform">
+              <div className={`flex flex-col items-center justify-center p-5 transition-colors ${isDragging ? 'text-emerald-500' : 'text-slate-400 group-hover/label:text-emerald-500 dark:group-hover/label:text-emerald-400'}`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-transform ${isDragging ? 'bg-emerald-500/20 scale-110' : 'bg-slate-100 dark:bg-slate-800 group-hover/label:scale-110'}`}>
                   <ImagePlus className="w-6 h-6" />
                 </div>
-                <p className="text-sm font-semibold">Drop photo here</p>
+                <p className="text-sm font-semibold">{isDragging ? 'Drop it to analyze' : 'Drop photo here'}</p>
                 <p className="text-[10px] opacity-70 mt-1">Bills, forms, or chaotic desks</p>
               </div>
               <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -77,8 +102,9 @@ export function ImageUpload() {
                  </button>
               </div>
               {isUploading && (
-                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md flex flex-col items-center justify-center">
+                  <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mb-3" />
+                  <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest animate-pulse">Analyzing Space...</p>
                 </div>
               )}
             </motion.div>

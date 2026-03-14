@@ -19,6 +19,7 @@ export function useAudioStream() {
   const [metrics, setMetrics] = useState<SessionMetrics | null>(null);
   const [clarityMap, setClarityMap] = useState<Record<string, unknown> | null>(null);
   const [ragStatus, setRagStatus] = useState<string | null>(null);
+  const [connectionType, setConnectionType] = useState<'mic' | 'camera' | 'screen'>('mic');
   const videoIntervalRef = useRef<number | null>(null);
 
   const captureFrame = useCallback(async (videoTrack: MediaStreamTrack) => {
@@ -34,10 +35,14 @@ export function useAudioStream() {
       ctx?.drawImage(video, 0, 0);
       const base64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
       
-      await fetch('http://localhost:8082/upload', {
+      await fetch('http://localhost:8082/api/analyze-media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64 })
+        body: JSON.stringify({ 
+            data: base64,
+            mime_type: 'image/jpeg',
+            session_id: 'default_session'
+        })
       });
 
       video.srcObject = null;
@@ -64,6 +69,7 @@ export function useAudioStream() {
             setRagStatus(msg.status);
             setTimeout(() => setRagStatus(null), 3000);
             break;
+        case 'metrics':
         case 'session_metrics':
             setMetrics(msg.data);
             break;
@@ -98,13 +104,14 @@ export function useAudioStream() {
   }, [stopCapture, stopPlayback, wsDisconnect, clearTranscript]);
 
   const connect = useCallback(async (type: 'mic' | 'camera' | 'screen' = 'mic') => {
+    setConnectionType(type);
     wsConnect();
   }, [wsConnect]);
 
   // Effect to start capture once WS is connected
   useEffect(() => {
     if (isConnected) {
-        startCapture((buffer) => {
+        startCapture(connectionType, (buffer) => {
             wsSend(buffer);
         }).then((mediaStream) => {
             if (mediaStream) {
@@ -123,12 +130,57 @@ export function useAudioStream() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected]);
 
+  // Hackathon Debug Trigger: Force render mock data if live analysis hangs
+  useEffect(() => {
+    const handleForceMock = () => {
+      console.log("DEBUG: Forcing Mock Data for Nano Banana Demo");
+      setMetrics({
+        clarity_score: 92,
+        stress_level: 8,
+        topic_affinity: { "Nano Banana": 100, "Innovation": 85, "Visual Synthesis": 95 },
+        action_readiness: "Peak Performance"
+      });
+    };
+    window.addEventListener('force-mock-data', handleForceMock);
+    return () => window.removeEventListener('force-mock-data', handleForceMock);
+  }, []);
+
   const finishSession = useCallback(() => {
     wsSend(JSON.stringify({ type: 'finalize' }));
     setTimeout(() => {
         disconnect();
     }, 2000);
   }, [wsSend, disconnect]);
+
+  const sendMedia = useCallback(async (base64: string, mimeType: string) => {
+    try {
+        const response = await fetch('http://localhost:8082/api/analyze-media', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                data: base64,
+                mime_type: mimeType,
+                session_id: 'default_session'
+            })
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            console.log("DEBUG: Hybrid Analysis Success", result.analysis);
+            if (result.metrics) {
+                console.log("DEBUG: Setting Metrics from REST", result.metrics);
+                setMetrics(result.metrics);
+            }
+            
+            // Correctly use the string-based transcript system
+            addTranscript(`[Visual Intelligence]: ${result.analysis}`);
+        } else {
+            console.error("DEBUG: Hybrid Analysis returned error", result.message);
+        }
+    } catch (err) {
+        console.error("Hybrid Analysis Failed:", err);
+    }
+  }, [addTranscript]);
 
   return { 
     isConnected, 
@@ -141,6 +193,7 @@ export function useAudioStream() {
     stream, 
     connect, 
     disconnect, 
-    finishSession 
+    finishSession,
+    sendMedia
   };
 }

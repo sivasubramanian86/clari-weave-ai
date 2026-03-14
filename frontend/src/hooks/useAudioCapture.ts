@@ -9,10 +9,19 @@ export function useAudioCapture() {
   const processorRef = useRef<ScriptProcessorNode | AudioWorkletNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const startCapture = useCallback(async (onAudioProcess: (buffer: ArrayBuffer) => void) => {
+  const startCapture = useCallback(async (type: 'mic' | 'camera' | 'screen', onAudioProcess: (buffer: ArrayBuffer) => void) => {
     try {
-      console.log("DEBUG: Requesting microphone permission...");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log(`DEBUG: Requesting ${type} permission...`);
+      let stream;
+      if (type === 'screen') {
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream = new MediaStream([...displayStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
+      } else if (type === 'camera') {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      } else {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
       streamRef.current = stream;
       
       const audioContext = new AudioContext({ sampleRate: 16000 });
