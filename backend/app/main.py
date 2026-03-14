@@ -321,10 +321,18 @@ async def live_session(websocket: WebSocket):
         except:
             pass
 
-# SPA Fallback: Serve index.html for any unknown routes (for React Router)
+# SPA Fallback: Serve existing static files in dist root, or fallback to index.html
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    index_path = os.path.join(os.getcwd(), "frontend", "dist", "index.html")
+    dist_path = os.path.join(os.getcwd(), "frontend", "dist")
+    file_path = os.path.join(dist_path, full_path)
+    
+    # If file exists in dist root (like pcm-worker.js), serve it directly
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # Otherwise, fallback to index.html for SPA routing
+    index_path = os.path.join(dist_path, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"error": "Frontend not built. Please run npm run build."}
