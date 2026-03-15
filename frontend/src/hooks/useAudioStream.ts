@@ -32,6 +32,7 @@ export function useAudioStream() {
   const [connectionType, setConnectionType] = useState<'mic' | 'camera' | 'screen'>('mic');
   const videoIntervalRef = useRef<number | null>(null);
   const [currentWsUrl, setCurrentWsUrl] = useState(defaultWsUrl);
+  const [sessionId, setSessionId] = useState<string>('default_session');
 
   const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
   const hiddenCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -75,7 +76,7 @@ export function useAudioStream() {
         body: JSON.stringify({ 
             data: base64,
             mime_type: 'image/jpeg',
-            session_id: 'default_session'
+            session_id: sessionId
         })
       });
 
@@ -122,6 +123,9 @@ export function useAudioStream() {
         case 'metrics':
         case 'session_metrics':
             setMetrics(msg.data);
+            break;
+        case 'session_id':
+            setSessionId(msg.session_id);
             break;
         case 'session_ended':
             // Logic handled by useEffect
@@ -215,7 +219,7 @@ export function useAudioStream() {
             body: JSON.stringify({
                 data: base64,
                 mime_type: mimeType,
-                session_id: 'default_session'
+                session_id: sessionId
             })
         });
         

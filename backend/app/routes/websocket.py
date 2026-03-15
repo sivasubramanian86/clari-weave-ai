@@ -27,6 +27,7 @@ async def demo_session(websocket: WebSocket):
 
     user_id = "demo_user"
     session_id = f"demo_session_{int(asyncio.get_event_loop().time())}"
+    await websocket.send_json({"type": "session_id", "session_id": session_id})
 
     try:
         agent = get_demo_agent()
@@ -151,7 +152,19 @@ async def demo_session(websocket: WebSocket):
                         ))
                     elif "text" in message:
                         data = json.loads(message["text"])
-                        if data.get("type") == "finalize": break
+                        msg_type = data.get("type")
+                        if msg_type == "finalize":
+                            break
+                        elif msg_type == "text":
+                            # Forward text messages (like media insights) to the agent
+                            live_request_queue.send_content(types.Content(
+                                role="user",
+                                parts=[types.Part.from_text(text=data["text"])]
+                            ))
+                        elif msg_type == "audio_start":
+                            live_request_queue.send_activity_start()
+                        elif msg_type == "audio_end":
+                            live_request_queue.send_activity_end()
                 elif message.get("type") == "websocket.disconnect": break
             except Exception:
                 break
@@ -176,6 +189,7 @@ async def live_session(websocket: WebSocket):
 
     user_id = "default_user"
     session_id = "default_session"
+    await websocket.send_json({"type": "session_id", "session_id": session_id})
 
     try:
         if not GEMINI_API_KEY:

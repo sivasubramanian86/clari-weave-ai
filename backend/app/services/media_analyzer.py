@@ -98,7 +98,8 @@ def analyze_media(client, data_b64: str, mime_type: str) -> dict:
         match = re.search(r"\{.*\}", clean_text, re.DOTALL)
         result = json.loads(match.group()) if match else {"analysis": clean_text}
 
-    logger.info("Media analysis complete")
+    analysis_text = result.get("analysis", "No analysis text returned.")
+    logger.info(f"Media analysis complete. Summary: {analysis_text[:100]}...")
     return {
         "status": "success",
         "analysis": result.get("analysis", "Analysis complete."),
