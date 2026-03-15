@@ -93,7 +93,8 @@ export function useAudioStream() {
   
   // In production, we serve from the same origin on port 8080/Cloud Run default
   // In development, the backend is usually on 8082
-  const wsUrl = isDev ? `${protocol}//${window.location.hostname}:8082/ws/session` : `${protocol}//${host}/ws/session`;
+  const defaultWsUrl = isDev ? `${protocol}//${window.location.hostname}:8082/ws/session` : `${protocol}//${host}/ws/session`;
+  const [currentWsUrl, setCurrentWsUrl] = useState(defaultWsUrl);
   const baseUrl = isDev ? `http://${window.location.hostname}:8082` : ``;
 
   // Handle incoming audio directly
@@ -101,7 +102,7 @@ export function useAudioStream() {
     playAudio(data);
   }, [playAudio]);
 
-  const { isConnected, connect: wsConnect, disconnect: wsDisconnect, send: wsSend } = useLiveSession(wsUrl, {
+  const { isConnected, connect: wsConnect, disconnect: wsDisconnect, send: wsSend } = useLiveSession(currentWsUrl, {
         onAudio: handleAudio,
         onMessage: handleMessage
     }
@@ -118,10 +119,17 @@ export function useAudioStream() {
     clearTranscript();
   }, [stopCapture, stopPlayback, wsDisconnect, clearTranscript]);
 
-  const connect = useCallback(async (type: 'mic' | 'camera' | 'screen' = 'mic') => {
+  const connect = useCallback(async (type: 'mic' | 'camera' | 'screen' = 'mic', isDemo = false) => {
     setConnectionType(type);
+    const targetUrl = isDemo 
+        ? (isDev ? `${protocol}//${window.location.hostname}:8082/ws/demo` : `${protocol}//${host}/ws/demo`)
+        : defaultWsUrl;
+    
+    setCurrentWsUrl(targetUrl);
+    // Use a small timeout to ensure the state update for URL propagates if needed, 
+    // though useLiveSession uses the latest url from its props/args on connect()
     wsConnect();
-  }, [wsConnect]);
+  }, [wsConnect, defaultWsUrl, protocol, host, isDev]);
 
   // Effect to start capture once WS is connected
   useEffect(() => {

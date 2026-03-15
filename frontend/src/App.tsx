@@ -81,6 +81,10 @@ function App() {
     }
   }, [isDark]);
 
+  const handleDemoStart = useCallback(() => {
+    if (!isConnected) connect('mic', true);
+  }, [isConnected, connect]);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'live-mic':
@@ -127,7 +131,11 @@ function App() {
         <div className="absolute bottom-[10%] -right-[10%] w-[30%] h-[30%] bg-blue-500/10 blur-[120px] rounded-full animate-pulse [animation-delay:2s]" />
       </div>
 
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        onDemoStart={handleDemoStart}
+      />
 
       <ClaraHologram isConnected={isConnected} isSpeaking={transcript.length > 0} metrics={metrics} />
 

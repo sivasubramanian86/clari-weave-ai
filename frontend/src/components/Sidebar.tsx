@@ -20,6 +20,7 @@ import { PremiumLogo } from './PremiumLogo';
 interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onDemoStart?: () => void;
 }
 
 const navItems = [
@@ -38,7 +39,7 @@ const navItems = [
   { id: 'faq', label: 'Help & FAQ', icon: HelpCircle, category: 'System' },
 ];
 
-export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, onDemoStart }: SidebarProps) {
   return (
     <aside className="w-64 h-screen fixed left-0 top-0 z-50 flex flex-col border-r border-slate-200 dark:border-white/5 bg-white/70 dark:bg-black/20 backdrop-blur-3xl overflow-y-auto custom-scrollbar">
       <div className="p-8">
@@ -80,7 +81,18 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="p-6 border-t border-slate-200 dark:border-white/5">
+      <div className="p-6 space-y-4 border-t border-slate-200 dark:border-white/5">
+        <button 
+          onClick={onDemoStart}
+          className="w-full flex items-center gap-3 px-4 py-3 bg-emerald-500 text-white rounded-2xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 group"
+        >
+          <div className="relative">
+            <Mic2 size={18} />
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
+          </div>
+          <span className="text-xs font-black tracking-widest uppercase">Start Demo</span>
+        </button>
+
         <button className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-red-500 transition-colors">
           <LogOut size={18} />
           <span className="text-xs font-bold tracking-tight">Sign Out</span>
