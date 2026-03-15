@@ -60,6 +60,7 @@ def deploy():
         f"--region {REGION} "
         f"--allow-unauthenticated "
         f"--port 8080 "
+        f"--memory 2Gi "
         f"--timeout 3600 "
         f"--set-env-vars=\"GEMINI_API_KEY={API_KEY}\"",
         "Deploying to Cloud Run"

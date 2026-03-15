@@ -29,10 +29,10 @@ Return ONLY a JSON object with:
 
 # Models tried in priority order — verified against v1beta API
 _MODELS_TO_TRY = [
-    "gemini-2.5-flash",                # Primary: VERIFIED PASS
-    "gemini-2.5-flash-lite",           # Fallback: VERIFIED PASS (faster)
-    "gemini-3.1-flash-image-preview",  # Fallback: Gemini 3.1 multimodal
-    "gemini-2.0-flash",                # Last resort
+    "gemini-2.0-flash-exp",            # Primary: Multimodal verified
+    "gemini-1.5-flash",                # Reliable fallback
+    "gemini-2.0-flash",                # Latest standard
+    "gemini-1.5-pro",                  # High capability fallback
 ]
 
 

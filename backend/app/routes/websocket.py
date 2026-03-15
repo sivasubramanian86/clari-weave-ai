@@ -94,14 +94,24 @@ async def demo_session(websocket: WebSocket):
                 "Proceed to Section 4: Mind Mesh & system architecture. Talk slowly for 60 seconds.",
                 "Final Closure & Vision for the future. You are at minute 4. Wrap up now."
             ]
-            for stage_text in stages:
-                if websocket.client_state.value == 3: break
-                logger.info(f"Triggering Demo Stage: {stage_text}")
-                live_request_queue.send_content(types.Content(
-                    role="user",
-                    parts=[types.Part.from_text(text=stage_text)]
-                ))
-                await asyncio.sleep(60)
+            try:
+                for stage_text in stages:
+                    if websocket.client_state.value == 3: break # Disconnected
+                    logger.info(f"Triggering Demo Stage: {stage_text}")
+                    try:
+                        live_request_queue.send_content(types.Content(
+                            role="user",
+                            parts=[types.Part.from_text(text=stage_text)]
+                        ))
+                    except Exception as e:
+                        logger.warning(f"Failed to send demo stage content: {e}")
+                    
+                    # Sleep for 60-65 seconds to ensure we hit the 4 min mark
+                    await asyncio.sleep(60 if "Final" not in stage_text else 5)
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.error(f"Demo controller error: {e}")
 
         controller_task = asyncio.create_task(demo_controller())
 

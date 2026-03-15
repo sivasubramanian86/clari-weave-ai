@@ -16,11 +16,22 @@ export function useAudioStream() {
   const { playAudio, stopPlayback, clearBuffer } = useAudioPlayback();
   const { isCapturing, permissionError, audioLevel, stream, startCapture, stopCapture } = useAudioCapture();
  
+  // Dynamic URL resolution for Cloud Deployment
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  const isDev = host.includes('localhost') || host.includes('127.0.0.1');
+  
+  // In production, we serve from the same origin on port 8080/Cloud Run default
+  // In development, the backend is usually on 8082
+  const defaultWsUrl = isDev ? `${protocol}//${window.location.hostname}:8082/ws/session` : `${protocol}//${host}/ws/session`;
+  const baseUrl = isDev ? `http://${window.location.hostname}:8082` : ``;
+
   const [metrics, setMetrics] = useState<SessionMetrics | null>(null);
   const [clarityMap, setClarityMap] = useState<Record<string, unknown> | null>(null);
   const [ragStatus, setRagStatus] = useState<string | null>(null);
   const [connectionType, setConnectionType] = useState<'mic' | 'camera' | 'screen'>('mic');
   const videoIntervalRef = useRef<number | null>(null);
+  const [currentWsUrl, setCurrentWsUrl] = useState(defaultWsUrl);
 
   const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
   const hiddenCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -58,7 +69,7 @@ export function useAudioStream() {
       
       const base64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
       
-      await fetch('http://localhost:8082/api/analyze-media', {
+      const response = await fetch(`${baseUrl}/api/analyze-media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -68,14 +79,22 @@ export function useAudioStream() {
         })
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(`Frame capture backend error (${response.status}):`, errorText.slice(0, 100));
+      }
+
       video.pause();
       video.srcObject = null;
+      // Explicitly stop tracks to free up hardware
+      const tracks = new MediaStream([videoTrack]).getTracks();
+      tracks.forEach(track => track.stop());
     } catch (err) {
       console.error("Frame capture failed", err);
     } finally {
       isCapturingFrameRef.current = false;
     }
-  }, []);
+  }, [baseUrl]);
 
   // Define message handler for WebSocket
   const handleMessage = useCallback((msg: WebSocketMessage) => {
@@ -109,18 +128,6 @@ export function useAudioStream() {
             break;
     }
   }, [addTranscript, clearBuffer]);
-
-  // const [metrics, setMetrics] = useState<AnalysisMetrics | null>(null); // Keeping existing SessionMetrics type
-  // Dynamic URL resolution for Cloud Deployment
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host;
-  const isDev = host.includes('localhost') || host.includes('127.0.0.1');
-  
-  // In production, we serve from the same origin on port 8080/Cloud Run default
-  // In development, the backend is usually on 8082
-  const defaultWsUrl = isDev ? `${protocol}//${window.location.hostname}:8082/ws/session` : `${protocol}//${host}/ws/session`;
-  const [currentWsUrl, setCurrentWsUrl] = useState(defaultWsUrl);
-  const baseUrl = isDev ? `http://${window.location.hostname}:8082` : ``;
 
   // Handle incoming audio directly
   const handleAudio = useCallback((data: ArrayBuffer) => {
@@ -202,7 +209,7 @@ export function useAudioStream() {
 
   const sendMedia = useCallback(async (base64: string, mimeType: string) => {
     try {
-      const response = await fetch(`${baseUrl}/api/analyze-media`, {
+        const response = await fetch(`${baseUrl}/api/analyze-media`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -212,6 +219,12 @@ export function useAudioStream() {
             })
         });
         
+        const contentType = response.headers.get('content-type');
+        if (!response.ok || !contentType || !contentType.includes('application/json')) {
+            const errorText = await response.text();
+            throw new Error(`Server returned ${response.status}: ${errorText.slice(0, 100)}`);
+        }
+
         const result = await response.json();
         if (result.status === 'success') {
             console.log("DEBUG: Hybrid Analysis Success", result.analysis);
