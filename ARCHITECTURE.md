@@ -60,10 +60,8 @@ The frontend serves as the real-time multimodal capture and display layer, prior
 - **Mind Mesh Visualizer**: An interactive SVG/Canvas-based visualization tab that renders the current "Neural Firing" of Clara's decentralized mind, providing full transparency into her reasoning.
 - **WebSocket Transport**: All audio, video, and textual streams are sent asynchronously to the backend using `useLiveSession.ts`. It also handles incoming transcription updates, control messages (`interrupt`), and rich JSON payloads representing "Clarity Maps" and real-time biometric metrics.
 
-### 2. Backend (FastAPI / Google ADK)
-The Backend is the true orchestrator of ClariWeave, built around the rigorous ADK Lifecycle paradigm.
-- **The Engine (Google ADK)**: The application initiates a `Runner` with an `InMemorySessionService`, binding connection state securely. The connection orchestrates raw upstream binary events with downstream `Part` generation from Gemini.
 - **The "Tool Gate"**: To solve race conditions where Gemini enters a localized reasoning loop (e.g. searching the vector store) while the user continues to speak, the backend implements an `is_tool_executing` switch. Audio upstream dynamically halts when tools fire, preserving the integrity of turn-based responses without dropping the session.
+- **Orchestration Trail Streaming**: The backend now captures every `function_call` and `function_response` event from the ADK Runner and streams them as `type: orchestration` JSON events to the frontend. This provides the "Glass Box" transparency into Clara's decision-making process.
 - **Port Alignment**: Runs on port `8082` explicitly synchronized between the fast-moving upstream Vite dev server and the downstream Uvicorn app. 
 
 ### 3. The Agent Mesh
@@ -74,6 +72,7 @@ ClariWeave defines a central "Coordinator" agent utilizing Google ADK's `Agent` 
 - **The Weaver**: Weaves emotional resonance and micro-actions into short, non-threatening vocal responses.
 - **The Guardian**: Strictly enforces PII masking and ensures no medical/legal or financial advice is accidentally spawned.
 - **The Analyst**: Periodically synthesizes the session state into a structured schema for the live infographic dashboard.
+- **Glass Box Transparency**: Every tool orchestration is broadcast to the **Live Trail Monitor**, ensuring that judges and users can see exactly how the Agent Mesh is collaborating.
 
 ### 4. Integration with Gemini 2.5 Flash Native Audio
 The entire node leverages the `gemini-2.5-flash-native-audio-latest` model.

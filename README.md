@@ -60,6 +60,30 @@ We provide several scripts in `scripts/` to verify your environment and API acce
 - `python scripts/verify_live.py`: Test the Multimodal Live API connection.
 - `python scripts/discover_api.py`: Inspect the GenAI SDK capabilities.
 
+## ⚖️ Reproducible Testing Guide for Judges
+
+To verify the core engine and multimodal capabilities of ClariWeave AI, please follow this step-by-step testing script:
+
+### 1. Verification of Live Uplink
+Visit the [Live Deployment](https://clariweave-agent-1066883661243.us-central1.run.app) and ensure the "Infrastructure Status" shows **Uplink Active**.
+
+### 2. Live Orchestration Test
+1.  Navigate to the **System Logs** tab.
+2.  Speak to Clara: *"Hey Clara, help me unweave my mental clutter."*
+3.  Observe the **Real-time Orchestration** panel. You should see trails for `rag_search_history` and `extract_session_metrics` appear live as she processes your request.
+
+### 3. Multimodal Insight Test
+1.  Switch to the **Upload** tab and select an image or short video of a cluttered workspace.
+2.  Wait for the **Hybrid Analysis** to complete.
+3.  Clara will proactively interrupt the session to narrate insights about the clutter she observed, mapping it to your mental energy levels.
+
+### 4. Local Reproduction (Optional)
+If you wish to run the engine locally:
+1.  `pip install -r backend/requirements.txt`
+2.  `npm install --prefix frontend`
+3.  `python start.py`
+4.  Standard tests are available via `pytest backend/tests`.
+
 ## 🧠 The Story behind ClariWeaveAI
 
 ### 💡 Inspiration
