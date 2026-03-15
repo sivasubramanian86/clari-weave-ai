@@ -15,24 +15,47 @@ export function useAudioStream() {
   const { transcript, addTranscript, clearTranscript } = useTranscript();
   const { playAudio, stopPlayback, clearBuffer } = useAudioPlayback();
   const { isCapturing, permissionError, audioLevel, stream, startCapture, stopCapture } = useAudioCapture();
-
+ 
   const [metrics, setMetrics] = useState<SessionMetrics | null>(null);
   const [clarityMap, setClarityMap] = useState<Record<string, unknown> | null>(null);
   const [ragStatus, setRagStatus] = useState<string | null>(null);
   const [connectionType, setConnectionType] = useState<'mic' | 'camera' | 'screen'>('mic');
   const videoIntervalRef = useRef<number | null>(null);
 
+  const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
+  const hiddenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isCapturingFrameRef = useRef(false);
+
   const captureFrame = useCallback(async (videoTrack: MediaStreamTrack) => {
+    if (isCapturingFrameRef.current) return;
+    isCapturingFrameRef.current = true;
+
     try {
-      const video = document.createElement('video');
+      if (!hiddenVideoRef.current) {
+        hiddenVideoRef.current = document.createElement('video');
+        hiddenVideoRef.current.muted = true;
+        hiddenVideoRef.current.setAttribute('playsinline', '');
+      }
+      
+      const video = hiddenVideoRef.current;
       video.srcObject = new MediaStream([videoTrack]);
+      
+      // Wait for video to be ready
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => resolve(true);
+      });
       await video.play();
 
-      const canvas = document.createElement('canvas');
+      if (!hiddenCanvasRef.current) {
+        hiddenCanvasRef.current = document.createElement('canvas');
+      }
+      
+      const canvas = hiddenCanvasRef.current;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(video, 0, 0);
+      
       const base64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
       
       await fetch('http://localhost:8082/api/analyze-media', {
@@ -45,10 +68,12 @@ export function useAudioStream() {
         })
       });
 
+      video.pause();
       video.srcObject = null;
-      video.remove();
     } catch (err) {
       console.error("Frame capture failed", err);
+    } finally {
+      isCapturingFrameRef.current = false;
     }
   }, []);
 

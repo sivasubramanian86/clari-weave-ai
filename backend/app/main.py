@@ -58,4 +58,10 @@ for router in __all_routers__:
 if __name__ == "__main__":
     import uvicorn
     logger.info(f"Starting ClariWeave AI Backend on {HOST}:{PORT}")
-    uvicorn.run(app, host=HOST, port=PORT)
+    uvicorn.run(
+        app, 
+        host=HOST, 
+        port=PORT,
+        ws_ping_interval=60,
+        ws_ping_timeout=60
+    )

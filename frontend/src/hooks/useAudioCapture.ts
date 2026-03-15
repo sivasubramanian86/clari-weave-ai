@@ -49,21 +49,23 @@ export function useAudioCapture() {
       const processor = new AudioWorkletNode(audioContext, 'pcm-processor');
       processorRef.current = processor; // No cast needed if ref type is updated
 
+      let lastVisualUpdate = 0;
       processor.port.onmessage = (e) => {
         const buffer = e.data;
         const inputData = new Int16Array(buffer);
         
-        let sumSquares = 0;
-        for (let i = 0; i < inputData.length; i++) {
-          let val = inputData[i] / 0x8000;
-          sumSquares += val * val;
+        const now = Date.now();
+        if (now - lastVisualUpdate > 100) {
+          let sumSquares = 0;
+          for (let i = 0; i < inputData.length; i++) {
+            let val = inputData[i] / 0x8000;
+            sumSquares += val * val;
+          }
+          
+          const rms = Math.sqrt(sumSquares / inputData.length);
+          setAudioLevel(Math.floor(rms * 100));
+          lastVisualUpdate = now;
         }
-        
-        const rms = Math.sqrt(sumSquares / inputData.length);
-        if (rms > 0.01) {
-            // console.log(`DEBUG: Audio capture active (RMS: ${rms.toFixed(4)})`);
-        }
-        setAudioLevel(Math.floor(rms * 100));
 
         onAudioProcess(buffer);
       };

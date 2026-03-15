@@ -50,25 +50,38 @@ async def demo_session(websocket: WebSocket):
         live_request_queue = LiveRequestQueue()
         active_sessions[session_id] = live_request_queue
         
-        run_config = RunConfig(response_modalities=["AUDIO"])
+        run_config = RunConfig(
+            response_modalities=["AUDIO"],
+            session_resumption=types.SessionResumptionConfig()
+        )
 
         async def run_adk_loop():
-            try:
-                async for event in runner.run_live(
-                    user_id=user_id,
-                    session_id=session_id,
-                    live_request_queue=live_request_queue,
-                    run_config=run_config
-                ):
-                    if event.content and event.content.parts:
-                        for part in event.content.parts:
-                            if part.inline_data:
-                                await websocket.send_bytes(part.inline_data.data)
-                            elif part.text:
-                                await websocket.send_json({"type": "transcript", "text": part.text})
-            except Exception as e:
-                logger.error(f"Demo Loop Error: {e}")
-                await websocket.close()
+            max_retries = 3
+            retry_count = 0
+            while retry_count < max_retries:
+                try:
+                    logger.info(f"Starting Demo ADK run_live (Attempt {retry_count + 1})")
+                    async for event in runner.run_live(
+                        user_id=user_id,
+                        session_id=session_id,
+                        live_request_queue=live_request_queue,
+                        run_config=run_config
+                    ):
+                        if event.content and event.content.parts:
+                            for part in event.content.parts:
+                                if part.inline_data:
+                                    await websocket.send_bytes(part.inline_data.data)
+                                elif part.text:
+                                    await websocket.send_json({"type": "transcript", "text": part.text})
+                    break # Loop finished naturally
+                except Exception as e:
+                    retry_count += 1
+                    logger.warning(f"Demo ADK Loop Error (Attempt {retry_count}): {e}")
+                    if retry_count >= max_retries:
+                        logger.error("Max retries reached for Demo ADK Loop")
+                        await websocket.close()
+                        break
+                    await asyncio.sleep(1) # Small delay before retry
 
         adk_task = asyncio.create_task(run_adk_loop())
 
@@ -165,6 +178,7 @@ async def live_session(websocket: WebSocket):
 
         run_config = RunConfig(
             response_modalities=["AUDIO"],
+            session_resumption=types.SessionResumptionConfig()
         )
 
         is_tool_executing = False
@@ -172,58 +186,65 @@ async def live_session(websocket: WebSocket):
         # 2. ADK Event Loop (Downstream: Gemini -> Client)
         async def run_adk_loop():
             nonlocal is_tool_executing
-            logger.info(f"Starting ADK run_live for session {session_id}")
-            try:
-                async for event in runner.run_live(
-                    user_id=user_id,
-                    session_id=session_id,
-                    live_request_queue=live_request_queue,
-                    run_config=run_config
-                ):
-                    logger.debug(f"ADK Event received: {event}")
+            max_retries = 3
+            retry_count = 0
+            while retry_count < max_retries:
+                try:
+                    logger.info(f"Starting ADK run_live (Attempt {retry_count + 1})")
+                    async for event in runner.run_live(
+                        user_id=user_id,
+                        session_id=session_id,
+                        live_request_queue=live_request_queue,
+                        run_config=run_config
+                    ):
+                        logger.debug(f"ADK Event received: {event}")
 
-                    # Handle audio data
-                    if event.content and event.content.parts:
-                        for part in event.content.parts:
-                            if part.inline_data:
-                                logger.debug(f"Sending audio bytes: {len(part.inline_data.data)}")
-                                await websocket.send_bytes(part.inline_data.data)
-                            elif part.text:
-                                logger.info(f"Model Transcript: {part.text}")
-                                await websocket.send_json({
-                                    "type": "transcript",
-                                    "text": part.text
-                                })
-                            elif part.function_call:
-                                logger.info(f"Tool Call: {part.function_call.name}")
-                                is_tool_executing = True
-                                if part.function_call.name == "rag_search_history":
+                        # Handle audio data
+                        if event.content and event.content.parts:
+                            for part in event.content.parts:
+                                if part.inline_data:
+                                    logger.debug(f"Sending audio bytes: {len(part.inline_data.data)}")
+                                    await websocket.send_bytes(part.inline_data.data)
+                                elif part.text:
+                                    logger.info(f"Model Transcript: {part.text}")
                                     await websocket.send_json({
-                                        "type": "rag_notification",
-                                        "status": "Searching past wisdom..."
+                                        "type": "transcript",
+                                        "text": part.text
+                                    })
+                                elif part.function_call:
+                                    logger.info(f"Tool Call: {part.function_call.name}")
+                                    is_tool_executing = True
+                                    if part.function_call.name == "rag_search_history":
+                                        await websocket.send_json({
+                                            "type": "rag_notification",
+                                            "status": "Searching past wisdom..."
+                                        })
+
+                        # Handle tool responses
+                        function_responses = event.get_function_responses()
+                        if function_responses:
+                            logger.info(f"Tool Responses: {len(function_responses)}")
+                            is_tool_executing = False
+                            for response in function_responses:
+                                if getattr(response, "name", None) == "extract_session_metrics":
+                                    await websocket.send_json({
+                                        "type": "session_metrics",
+                                        "data": getattr(response, "response", {})
                                     })
 
-                    # Handle tool responses
-                    function_responses = event.get_function_responses()
-                    if function_responses:
-                        logger.info(f"Tool Responses: {len(function_responses)}")
-                        is_tool_executing = False
-                        for response in function_responses:
-                            if getattr(response, "name", None) == "extract_session_metrics":
-                                await websocket.send_json({
-                                    "type": "session_metrics",
-                                    "data": getattr(response, "response", {})
-                                })
+                        if event.usage_metadata:
+                            logger.info(f"Usage: {event.usage_metadata.total_token_count} tokens")
 
-                    if event.usage_metadata:
-                        logger.info(f"Usage: {event.usage_metadata.total_token_count} tokens")
-
-                logger.warning("ADK run_live loop finished naturally")
-
-            except Exception as e:
-                logger.error(f"ADK Loop EXCEPTION: {e}", exc_info=True)
-                await websocket.send_json({"error": f"Internal Loop Error: {str(e)}"})
-                await websocket.close()
+                    break # Loop finished naturally
+                except Exception as e:
+                    retry_count += 1
+                    logger.warning(f"ADK Loop Error (Attempt {retry_count}): {e}")
+                    if retry_count >= max_retries:
+                        logger.error("Max retries reached for ADK Loop")
+                        await websocket.send_json({"error": f"Internal Loop Error: {str(e)}"})
+                        await websocket.close()
+                        break
+                    await asyncio.sleep(1) # Small delay before retry
 
         # Start ADK loop as a background task
         adk_task = asyncio.create_task(run_adk_loop())
