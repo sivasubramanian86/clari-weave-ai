@@ -8,12 +8,98 @@ from google.adk import Runner
 from google.adk.agents.live_request_queue import LiveRequestQueue
 from google.adk.agents.run_config import RunConfig
 
-from ..agents import get_clariweave_agent
+from ..agents import get_clariweave_agent, get_demo_agent
 from ..services import session_service, active_sessions
 from ..config import GEMINI_API_KEY
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+@router.websocket("/ws/demo")
+async def demo_session(websocket: WebSocket):
+    """
+    WebSocket endpoint for the Hackathon Demo narration.
+    Triggers a proactive intro immediately.
+    """
+    await websocket.accept()
+    logger.info("Demo WebSocket connection established")
+
+    user_id = "demo_user"
+    session_id = f"demo_session_{int(asyncio.get_event_loop().time())}"
+
+    try:
+        agent = get_demo_agent()
+        runner = Runner(app_name="ClariWeaveDemo", agent=agent, session_service=session_service)
+        try:
+            runner.auto_create_session = True
+        except:
+            pass
+
+        # Robust session registration
+        try:
+            await session_service.create_session(
+                app_name="ClariWeaveDemo",
+                user_id=user_id,
+                session_id=session_id
+            )
+            logger.info(f"Demo Session {session_id} created")
+        except Exception as e:
+            logger.warning(f"Demo Registration note: {e}")
+
+        live_request_queue = LiveRequestQueue()
+        active_sessions[session_id] = live_request_queue
+        
+        run_config = RunConfig(response_modalities=["AUDIO"])
+
+        async def run_adk_loop():
+            try:
+                async for event in runner.run_live(
+                    user_id=user_id,
+                    session_id=session_id,
+                    live_request_queue=live_request_queue,
+                    run_config=run_config
+                ):
+                    if event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if part.inline_data:
+                                await websocket.send_bytes(part.inline_data.data)
+                            elif part.text:
+                                await websocket.send_json({"type": "transcript", "text": part.text})
+            except Exception as e:
+                logger.error(f"Demo Loop Error: {e}")
+                await websocket.close()
+
+        adk_task = asyncio.create_task(run_adk_loop())
+
+        # Proactive Demo Trigger
+        live_request_queue.send_content(types.Content(
+            role="user",
+            parts=[types.Part.from_text(text="Ready to demo ClariWeave. Start the 4-minute narration now.")]
+        ))
+
+        while True:
+            try:
+                message = await websocket.receive()
+                if message.get("type") == "websocket.receive":
+                    if "bytes" in message:
+                        live_request_queue.send_realtime(types.Blob(
+                            mime_type="audio/pcm;rate=16000",
+                            data=message["bytes"]
+                        ))
+                    elif "text" in message:
+                        data = json.loads(message["text"])
+                        if data.get("type") == "finalize": break
+                elif message.get("type") == "websocket.disconnect": break
+            except Exception:
+                break
+        
+        live_request_queue.close()
+        if not adk_task.done(): adk_task.cancel()
+
+    except Exception as e:
+        logger.error(f"Demo session error: {e}")
+        await websocket.close()
 
 
 @router.websocket("/ws/session")
