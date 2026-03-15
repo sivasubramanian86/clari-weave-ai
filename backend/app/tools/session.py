@@ -16,10 +16,9 @@ def save_clarity_map_and_shard(
     emotional_tone: str,
 ) -> dict:
     """
-    Called by the agent when it has gathered enough visual and audio context
-    to create a Clarity Map and suggest next steps.
-    Tries Firestore first; falls back to local JSON if unavailable.
+    Called by the agent when it has gathered enough visual and audio context.
     """
+    logger.info(f"save_clarity_map_and_shard CALLED for topics: {topics}")
     try:
         from google.cloud import firestore
 

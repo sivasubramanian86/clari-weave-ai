@@ -69,7 +69,8 @@ function App() {
     connect, 
     disconnect,
     finishSession,
-    sendMedia: baseSendMedia
+    sendMedia: baseSendMedia,
+    orchestrationLogs
   } = useAudioStream();
 
   const [uploadHistory, setUploadHistory] = useState<any[]>(() => {
@@ -163,7 +164,7 @@ function App() {
       case 'mind-mesh':
         return <MindMeshView />;
       case 'logs':
-        return <LogsView />;
+        return <LogsView liveLogs={orchestrationLogs} />;
       case 'history':
         return <HistoryView />;
       case 'settings':

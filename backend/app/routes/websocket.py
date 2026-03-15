@@ -261,7 +261,13 @@ async def live_session(websocket: WebSocket):
                                         "text": part.text
                                     })
                                 elif part.function_call:
-                                    logger.info(f"Tool Call: {part.function_call.name}")
+                                    # Forward as orchestration event
+                                    await websocket.send_json({
+                                        "type": "orchestration",
+                                        "agent": "Clara",
+                                        "step": part.function_call.name,
+                                        "status": "started"
+                                    })
                                     is_tool_executing = True
                                     if part.function_call.name == "rag_search_history":
                                         await websocket.send_json({
@@ -275,9 +281,22 @@ async def live_session(websocket: WebSocket):
                             logger.info(f"Tool Responses: {len(function_responses)}")
                             is_tool_executing = False
                             for response in function_responses:
-                                if getattr(response, "name", None) == "extract_session_metrics":
+                                tool_name = getattr(response, "name", "unknown")
+                                await websocket.send_json({
+                                    "type": "orchestration",
+                                    "agent": "Clara",
+                                    "step": tool_name,
+                                    "status": "completed",
+                                    "result": "Insight Generated"
+                                })
+                                if tool_name == "extract_session_metrics":
                                     await websocket.send_json({
                                         "type": "session_metrics",
+                                        "data": getattr(response, "response", {})
+                                    })
+                                elif tool_name == "save_clarity_map_and_shard":
+                                    await websocket.send_json({
+                                        "type": "clarity_map_saved",
                                         "data": getattr(response, "response", {})
                                     })
 

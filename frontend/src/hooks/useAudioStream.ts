@@ -33,6 +33,7 @@ export function useAudioStream() {
   const videoIntervalRef = useRef<number | null>(null);
   const [currentWsUrl, setCurrentWsUrl] = useState(defaultWsUrl);
   const [sessionId, setSessionId] = useState<string>('default_session');
+  const [orchestrationLogs, setOrchestrationLogs] = useState<any[]>([]);
 
   const hiddenVideoRef = useRef<HTMLVideoElement | null>(null);
   const hiddenCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -126,6 +127,15 @@ export function useAudioStream() {
             break;
         case 'session_id':
             setSessionId(msg.session_id);
+            break;
+        case 'orchestration':
+            setOrchestrationLogs(prev => [
+                {
+                    timestamp: new Date().toISOString(),
+                    ...msg
+                },
+                ...prev
+            ].slice(0, 50));
             break;
         case 'session_ended':
             // Logic handled by useEffect
@@ -267,6 +277,7 @@ export function useAudioStream() {
     connect, 
     disconnect, 
     finishSession,
-    sendMedia
+    sendMedia,
+    orchestrationLogs
   };
 }
