@@ -25,7 +25,7 @@ def start_processes():
     # Start Backend
     print("📦 Starting Backend (FastAPI)...")
     backend_process = subprocess.Popen(
-        [backend_python, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"],
+        [backend_python, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8082"],
         cwd=backend_dir
     )
 
@@ -39,7 +39,7 @@ def start_processes():
     )
 
     print("\n✅ Both services are starting.")
-    print("Backend: http://localhost:8080")
+    print("Backend: http://localhost:8082")
     print("Frontend: Check the output above (usually http://localhost:5173)")
     print("\nPress Ctrl+C to stop both services.")
 

@@ -55,6 +55,12 @@ export function useAudioStream() {
   // Define message handler for WebSocket
   const handleMessage = useCallback((msg: WebSocketMessage) => {
     // console.log("DEBUG: Received WS message", msg.type);
+    if (msg.error) {
+        console.error("DEBUG: Backend WebSocket Error:", msg.error);
+        addTranscript(`[System Error]: ${msg.error}`);
+        return;
+    }
+
     switch (msg.type) {
         case 'transcript':
             addTranscript(msg.text); // Correct usage: addTranscript takes a string
@@ -181,8 +187,16 @@ export function useAudioStream() {
                 setMetrics(result.metrics);
             }
             
-            // Correctly use the string-based transcript system
+            // Add to UI transcript
             addTranscript(`[Visual Intelligence]: ${result.analysis}`);
+
+            // Forward analysis to Clara via WebSocket so she narrates it aloud
+            if (result.analysis) {
+                wsSend(JSON.stringify({
+                    type: 'text',
+                    text: `[Media Analysis Complete] Here is what I observed from the uploaded media:\n\n${result.analysis}\n\nMetrics: Clarity ${result.metrics?.clarity_score ?? 'N/A'}/100, Stress ${result.metrics?.stress_level ?? 'N/A'}/100. Please summarize this for the user and offer guidance.`
+                }));
+            }
         } else {
             console.error("DEBUG: Hybrid Analysis returned error", result.message);
         }

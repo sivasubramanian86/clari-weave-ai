@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Maximize2, Minimize2 } from 'lucide-react';
 
 interface ClaraHologramProps {
   isConnected: boolean;
@@ -7,6 +9,7 @@ interface ClaraHologramProps {
 }
 
 export function ClaraHologram({ isConnected, isSpeaking = false, metrics }: ClaraHologramProps) {
+  const [isMinimized, setIsMinimized] = useState(false);
   const stress = metrics?.stress_level || 0;
   
   // Dynamic color logic based on stress
@@ -24,21 +27,29 @@ export function ClaraHologram({ isConnected, isSpeaking = false, metrics }: Clar
   ];
 
   return (
-    <div className="fixed bottom-8 left-8 z-[100] pointer-events-none select-none">
+    <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-4 pointer-events-auto select-none">
+      <button 
+        onClick={() => setIsMinimized(!isMinimized)}
+        className="p-2 glass rounded-full text-white/50 hover:text-emerald-500 transition-all hover:scale-110 shadow-lg"
+        title={isMinimized ? "Show Clara" : "Hide Clara"}
+      >
+        {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
+      </button>
+
       <AnimatePresence mode="wait">
-        {isConnected && (
+        {isConnected && !isMinimized && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.5, y: 50 }}
+            initial={{ opacity: 0, scale: 0.5, x: 50, y: 50 }}
+            animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+            exit={{ opacity: 0, scale: 0.5, x: 50, y: 50 }}
             className="relative"
           >
             {/* Thinking Bubbles (Agent Mesh) */}
-            <div className="absolute -top-16 left-0 flex flex-col gap-1">
+            <div className="absolute -top-16 right-0 flex flex-col items-end gap-1">
               {statusAgents.filter(a => a.active).map((agent, i) => (
                 <motion.div
                   key={agent.name}
-                  initial={{ x: -10, opacity: 0 }}
+                  initial={{ x: 10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: i * 0.1 }}
                   className="px-2 py-0.5 glass rounded-full flex items-center gap-2 border border-emerald-500/20"

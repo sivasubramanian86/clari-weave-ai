@@ -7,12 +7,16 @@ interface Props {
   type: 'image' | 'audio' | 'video';
   onUpload: (base64: string, mimeType: string) => void;
   onTabChange: (tab: string) => void;
+  history?: any[];
 }
 
-export function UploadTabs({ type, onUpload, onTabChange }: Props) {
+export function UploadTabs({ type, onUpload, onTabChange, history = [] }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Filter history by current type
+  const filteredHistory = history.filter(item => item.type === type);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -144,6 +148,40 @@ export function UploadTabs({ type, onUpload, onTabChange }: Props) {
           </div>
         ))}
       </div>
+
+      {/* Persistence Gallery: User History */}
+      {filteredHistory.length > 0 && (
+        <div className="space-y-4 pt-8">
+            <div className="flex items-center justify-between">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recently Analyzed</h3>
+                <div className="h-px flex-1 bg-slate-200 dark:bg-white/5 ml-4" />
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {filteredHistory.map((item) => (
+                    <motion.div 
+                        key={item.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative aspect-square glass rounded-2xl overflow-hidden border border-white/10 group cursor-pointer"
+                    >
+                        {item.type === 'image' ? (
+                            <img src={item.preview} alt="History" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-emerald-500/5">
+                                {item.type === 'audio' ? <FileAudio size={24} className="text-emerald-500" /> : <FileVideo size={24} className="text-emerald-500" />}
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                            <span className="text-[8px] font-bold text-white uppercase tracking-tighter">
+                                {new Date(item.timestamp).toLocaleTimeString()}
+                            </span>
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
+        </div>
+      )}
     </motion.div>
   );
 }

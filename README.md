@@ -2,84 +2,63 @@
 
 **Unweaving Mental Chaos into Multimodal Clarity.**
 
-ClariWeaveAI is a premium, real-time multimodal mental wellness agent designed to transform overwhelming thoughts and visual clutter into actionable micro-hits of clarity. Guided by **Clara** (powered by **Gemini 2.5 Flash Native Audio**), it orchestrates a specialized mesh of agents (The Linguist, The Weaver, The Archivist, The Analyst, and The Guardian) to provide a seamless, empathic interaction across voice, image, and text.
+ClariWeaveAI is a premium, real-time multimodal mental wellness agent designed to transform overwhelming thoughts and visual clutter into actionable micro-hits of clarity. Guided by **Clara** (powered by **Gemini 2.5 Flash Native Audio**), it orchestrates a specialized mesh of agents to provide a seamless, empathic interaction across voice, image, and text.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Gemini](https://img.shields.io/badge/Built%20with-Gemini%203.1-emerald)
+![Gemini](https://img.shields.io/badge/Built%20with-Gemini%202.0%20Flash-emerald)
 
 ## 🌍 Live Deployment
 
 ClariWeave AI is live on Google Cloud Run:
 **[View Live App](https://clariweave-agent-1066883661243.us-central1.run.app)**
 
-*Note: The live version requires a dedicated GEMINI_API_KEY. See the [Deployment](#-deployment) section for more details.*
-
 ## 🌟 Key Features
 
-- **Multimodal Uplink**: Simultaneous processing of audio (emotions/transcript) and video/images (visual context) for grounded reasoning.
-- **Emotion-Aware Hologram**: A reactive visual companion that pulses **Rose** when sensing stress and **Emerald** when the user attains focus, providing non-verbal validation.
-- **The "Mind Mesh" Visualizer**: A stunning, transparent map of Clara's "Neural Reasoning," showing the collaboration between specialized agents in real-time.
-- **Agent Mesh Architecture**:
-  - **The Linguist**: Instant translation and transcription for 100+ languages.
-  - **The Weaver**: Empathic specialist suggesting small, non-threatening micro-actions.
-  - **The Archivist**: RAG-powered knowledge custodian connecting you to past sessions.
-  - **The Analyst**: Quantifies your journey with real-time "Clarity Maps" and metrics.
-  - **The Guardian**: Ensures PII protection and safe boundaries.
-- **Dual Insights System**: Switch between **Live Insights** for your current session aura and **Past Insights** for historical growth patterns and archive wisdom.
-- **Proactive Intervention**: Clara doesn't just wait; she sees. She proactively identifies environmental stressors (like a messy desk) and gently guides you toward wellness.
+- **Multimodal Uplink**: Simultaneous processing of audio (emotions/transcript) and video/images (visual context).
+- **Agent Mesh Architecture**: Modularized backend with specialized agents (Weaver, Guardian, Archivist, Linguist, Analyst) coordinated by Clara.
+- **Robust Voice Control**: Advanced "Stop/Shutdown" detection with interim analysis for near-instant response.
+- **Media Persistence**: Visual gallery of recent uploads and analysis history.
+- **Mind Mesh Visualizer**: Real-time graph showing agent collaboration.
 
-For an in-depth look at how the Gemini Multimodal Live API and Google ADK power this mesh, see the [ARCHITECTURE.md](ARCHITECTURE.md).
+## 📁 Project Structure
+
+```
+├── backend/
+│   ├── app/
+│   │   ├── agents/    # Specialist agent modules (Clara, Weaver, etc.)
+│   │   ├── routes/    # Modular API endpoints (WS, Media, Health)
+│   │   ├── services/  # Business logic (Media analysis, Sessions)
+│   │   ├── tools/     # Multimodal tool definitions (RAG, Visual)
+│   │   └── models/    # Pydantic data schemas
+│   └── tests/         # Unit and integration tests
+├── scripts/           # Debugging & Verification utilities
+├── frontend/          # React + Vite application
+└── deploy.py          # Google Cloud Deployment automation
+```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 - Python 3.10+
 - Node.js 18+
 - [Google Gemini API Key](https://aistudio.google.com/app/apikey)
 
-### Installation
+### Installation & Running
 
-1. **Clone the Repo**:
+1. **Setup Environment**:
+   Copy `.env.example` to `.env` in the root and add your `GEMINI_API_KEY`.
+
+2. **Run Locally**:
+   The easiest way to start both services:
    ```bash
-   git clone https://github.com/your-username/clari-weave-ai.git
-   cd clari-weave-ai
-   ```
-
-2. **Backend Setup**:
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # venv\Scripts\activate on Windows
-   pip install -r requirements.txt
-   ```
-   Create a `.env` file in the `backend` folder:
-   ```env
-   GEMINI_API_KEY=your_key_here
-   ```
-
-3. **Frontend Setup**:
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-### Running the App
-
-1. **Start Backend**:
-   ```bash
-   cd backend
    python start.py
    ```
-2. **Start Frontend**:
-   ```bash
-   cd frontend
-   npm run dev
-   ```
 
-## 🛡️ Security
-
-We prioritize your mental safety and data privacy. For details, see [SECURITY.md](SECURITY.md).
+### 🛠️ Utilities (Verification)
+We provide several scripts in `scripts/` to verify your environment and API access:
+- `python scripts/verify_models.py`: List all available Gemini models.
+- `python scripts/verify_live.py`: Test the Multimodal Live API connection.
+- `python scripts/discover_api.py`: Inspect the GenAI SDK capabilities.
 
 ## 🧠 The Story behind ClariWeaveAI
 
@@ -106,5 +85,11 @@ We learned that the future of AI isn't just about answering questions—it's abo
 - **Biometric Integration**: Connecting to wearable devices for deeper heart-rate based grounding.
 - **Multi-Room Persistence**: Deploying Clara to smart displays to provide a consistent wellness companion throughout the home.
 
+## 🛡️ Security & Architecture
+For deep dives into our security protocols and agent orchestration, see:
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [SECURITY.md](SECURITY.md)
+- [TECH_STACK.md](TECH_STACK.md)
+
 ## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - See [LICENSE](LICENSE) for details.

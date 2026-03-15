@@ -6,15 +6,27 @@ export function LogsView() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const baseUrl = isDev ? `http://${window.location.hostname}:8082` : '';
+
   useEffect(() => {
-    fetch('http://localhost:8080/logs')
-      .then(res => res.json())
+    fetch(`${baseUrl}/logs`)
+      .then(res => {
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          // SPA fallback returned HTML — backend /logs endpoint not reachable
+          throw new Error('Non-JSON response from /logs — backend may not be running');
+        }
+        return res.json();
+      })
       .then(data => {
-        setLogs(data);
+        // Always ensure we store an array even if backend returns an object/error
+        setLogs(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(err => {
-        console.error(err);
+        console.warn('LogsView fetch failed:', err.message);
+        setLogs([]);
         setLoading(false);
       });
   }, []);

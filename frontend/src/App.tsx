@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { LiveTabs } from './components/tabs/LiveTabs';
@@ -10,8 +10,9 @@ import { FAQView } from './components/FAQView';
 import { LogsView } from './components/LogsView';
 import { MindMeshView } from './components/MindMeshView';
 import { useAudioStream } from './hooks/useAudioStream';
+import { useWakeWord } from './hooks/useWakeWord';
 import { ClaraHologram } from './components/ClaraHologram';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Mic } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('live-mic');
@@ -32,8 +33,43 @@ function App() {
     connect, 
     disconnect,
     finishSession,
-    sendMedia
+    sendMedia: baseSendMedia
   } = useAudioStream();
+
+  const [uploadHistory, setUploadHistory] = useState<any[]>(() => {
+    const saved = localStorage.getItem('uploadHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const handleSendMedia = useCallback(async (base64: string, mimeType: string) => {
+    // Call the base sendMedia from hook
+    await baseSendMedia(base64, mimeType);
+    
+    // Create a history entry
+    const newEntry = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      type: mimeType.split('/')[0],
+      mimeType,
+      preview: `data:${mimeType};base64,${base64}`
+    };
+
+    setUploadHistory(prev => {
+      const updated = [newEntry, ...prev].slice(0, 10); // Keep last 10
+      localStorage.setItem('uploadHistory', JSON.stringify(updated));
+      return updated;
+    });
+  }, [baseSendMedia]);
+
+  const handleWakeStart = useCallback(() => {
+    if (!isConnected) connect('mic');
+  }, [isConnected, connect]);
+
+  const handleWakeStop = useCallback(() => {
+    if (isConnected) disconnect();
+  }, [isConnected, disconnect]);
+
+  useWakeWord({ onStart: handleWakeStart, onStop: handleWakeStop });
 
   useEffect(() => {
     if (isDark) {
@@ -54,11 +90,11 @@ function App() {
       case 'live-screen':
         return <LiveTabs type="screen" isConnected={isConnected} audioLevel={audioLevel} transcript={transcript} ragStatus={ragStatus} stream={stream} permissionError={permissionError} onConnect={() => connect('screen')} onDisconnect={disconnect} onFinish={finishSession} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'upload-image':
-        return <UploadTabs type="image" onUpload={sendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
+        return <UploadTabs type="image" history={uploadHistory} onUpload={handleSendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'upload-audio':
-        return <UploadTabs type="audio" onUpload={sendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
+        return <UploadTabs type="audio" history={uploadHistory} onUpload={handleSendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'upload-video':
-        return <UploadTabs type="video" onUpload={sendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
+        return <UploadTabs type="video" history={uploadHistory} onUpload={handleSendMedia} onTabChange={(tab) => setActiveTab(tab === 'analytics' ? 'live-insights' : tab)} />;
       case 'live-insights':
         return <InfographicView metrics={metrics} />;
       case 'past-insights':
@@ -106,6 +142,11 @@ function App() {
                 </div>
                 <div className="w-px h-3 bg-slate-200 dark:bg-white/10" />
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Latency: 12ms</span>
+                <div className="w-px h-3 bg-slate-200 dark:bg-white/10" />
+                <div className="flex items-center gap-1.5" title="Say Hey Clara to start, Stop Clara to end">
+                  <Mic size={10} className="text-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 uppercase tracking-widest">Wake Word Active</span>
+                </div>
               </div>
            </div>
 
@@ -156,3 +197,4 @@ function App() {
 }
 
 export default App;
+

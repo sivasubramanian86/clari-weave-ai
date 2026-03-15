@@ -7,6 +7,28 @@ REGION = "us-central1"
 SERVICE_NAME = "clariweave-agent"
 IMAGE_NAME = f"gcr.io/{PROJECT_ID}/{SERVICE_NAME}"
 
+def get_api_key():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+    
+    key = os.environ.get("GEMINI_API_KEY")
+    if key: return key
+
+    # Fallback manual parsing if dotenv is not installed in current env
+    try:
+        with open(".env", "r") as f:
+            for line in f:
+                if line.startswith("GEMINI_API_KEY="):
+                    return line.strip().split("=", 1)[1].strip('\'"')
+    except Exception:
+        pass
+    return "YOUR_API_KEY_HERE"
+
+API_KEY = get_api_key()
+
 def run_command(command, description):
     print(f"\n[RUNNING] {description}...")
     try:
@@ -39,7 +61,7 @@ def deploy():
         f"--allow-unauthenticated "
         f"--port 8080 "
         f"--timeout 3600 "
-        f"--set-env-vars=\"GEMINI_API_KEY=PLACEHOLDER_OR_GET_FROM_SECRET\"",
+        f"--set-env-vars=\"GEMINI_API_KEY={API_KEY}\"",
         "Deploying to Cloud Run"
     )
 
@@ -47,7 +69,6 @@ def deploy():
     print("🚀 CLARE IS NOW IN THE CLOUD!")
     print(f"Service URL: Visit your GCP Console for the Cloud Run URL.")
     print("="*50)
-    print("\nNOTE: Remember to set your GEMINI_API_KEY in the Cloud Run Console secrets!")
 
 if __name__ == "__main__":
     deploy()
