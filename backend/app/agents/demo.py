@@ -4,7 +4,7 @@ from google.genai import types
 from .instructions import CLARA_DEMO_INSTRUCTION
 from ..tools import TOOLS
 
-_DEMO_MODEL = "gemini-2.0-flash-exp" # Fast model for demo narration
+_DEMO_MODEL = "gemini-2.5-flash-native-audio-latest"
 
 def get_demo_agent() -> Agent:
     """
