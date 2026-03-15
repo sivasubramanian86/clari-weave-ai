@@ -72,11 +72,25 @@ async def demo_session(websocket: WebSocket):
 
         adk_task = asyncio.create_task(run_adk_loop())
 
-        # Proactive Demo Trigger
-        live_request_queue.send_content(types.Content(
-            role="user",
-            parts=[types.Part.from_text(text="Ready to demo ClariWeave. Start the 4-minute narration now.")]
-        ))
+        # Demo Controller: Sends timed prompts to keep narration moving for 4 minutes
+        async def demo_controller():
+            stages = [
+                "Proceed to Section 1: Welcome & Vision. Talk slowly for 60 seconds.",
+                "Proceed to Section 2: Live Interaction & Emotion. Talk slowly for 60 seconds.",
+                "Proceed to Section 3: Visual Intelligence & Grounded Wellness. Talk slowly for 60 seconds.",
+                "Proceed to Section 4: Mind Mesh & system architecture. Talk slowly for 60 seconds.",
+                "Final Closure & Vision for the future. You are at minute 4. Wrap up now."
+            ]
+            for stage_text in stages:
+                if websocket.client_state.value == 3: break
+                logger.info(f"Triggering Demo Stage: {stage_text}")
+                live_request_queue.send_content(types.Content(
+                    role="user",
+                    parts=[types.Part.from_text(text=stage_text)]
+                ))
+                await asyncio.sleep(60)
+
+        controller_task = asyncio.create_task(demo_controller())
 
         while True:
             try:
@@ -96,6 +110,7 @@ async def demo_session(websocket: WebSocket):
         
         live_request_queue.close()
         if not adk_task.done(): adk_task.cancel()
+        if not controller_task.done(): controller_task.cancel()
 
     except Exception as e:
         logger.error(f"Demo session error: {e}")
