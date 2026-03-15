@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Component } from 'react';
+import type { ErrorInfo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar } from './components/Sidebar';
 import { LiveTabs } from './components/tabs/LiveTabs';
@@ -12,7 +13,42 @@ import { MindMeshView } from './components/MindMeshView';
 import { useAudioStream } from './hooks/useAudioStream';
 import { useWakeWord } from './hooks/useWakeWord';
 import { ClaraHologram } from './components/ClaraHologram';
-import { Sun, Moon, Mic } from 'lucide-react';
+import { Sun, Moon, Mic, AlertTriangle } from 'lucide-react';
+
+// Class-based Error Boundary for React
+class ErrorBoundary extends Component<{children: React.ReactNode}, {hasError: boolean}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("ErrorBoundary caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-8 text-center">
+          <AlertTriangle size={48} className="text-rose-500 mb-4" />
+          <h1 className="text-xl font-black uppercase tracking-widest">Interface Disruption</h1>
+          <p className="text-sm text-slate-400 mt-2">Clara encountered a local subsystem error. Please refresh the page.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-6 px-6 py-2 bg-emerald-500 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-emerald-600 transition-colors"
+          >
+            Restore Node
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState('live-mic');
@@ -46,6 +82,8 @@ function App() {
     await baseSendMedia(base64, mimeType);
     
     // Create a history entry
+    // Note: We keep the preview in the React state for immediate feedback, 
+    // but we will strip it or limit it before saving to localStorage to avoid QuotaExceededError.
     const newEntry = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
@@ -56,7 +94,21 @@ function App() {
 
     setUploadHistory(prev => {
       const updated = [newEntry, ...prev].slice(0, 10); // Keep last 10
-      localStorage.setItem('uploadHistory', JSON.stringify(updated));
+      
+      // Persist to localStorage safely
+      try {
+        // Create a 'slim' version for persistence (no large blobs)
+        const slimHistory = updated.map(item => ({
+          ...item,
+          // Only keep preview for images, and even then, maybe limit size in real app
+          // For video/audio, the base64 is way too large for 5MB localStorage
+          preview: item.type === 'image' ? item.preview : null 
+        }));
+        localStorage.setItem('uploadHistory', JSON.stringify(slimHistory));
+      } catch (e) {
+        console.warn("Could not save to localStorage (Quota exceeded)", e);
+      }
+      
       return updated;
     });
   }, [baseSendMedia]);
@@ -124,7 +176,8 @@ function App() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-[#0a0c10] text-slate-900 dark:text-slate-100 transition-colors duration-500">
+    <ErrorBoundary>
+      <div className="flex min-h-screen bg-slate-50 dark:bg-[#0a0c10] text-slate-900 dark:text-slate-100 transition-colors duration-500">
       {/* Background Glows */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-40 dark:opacity-20">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full animate-pulse" />
@@ -201,7 +254,8 @@ function App() {
          </p>
       </footer>
     </div>
-  );
+  </ErrorBoundary>
+);
 }
 
 export default App;
