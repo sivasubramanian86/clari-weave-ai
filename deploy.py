@@ -66,7 +66,7 @@ def deploy():
     )
 
     print("\n" + "="*50)
-    print("🚀 CLARE IS NOW IN THE CLOUD!")
+    print("CLARA IS NOW IN THE CLOUD!")
     print(f"Service URL: Visit your GCP Console for the Cloud Run URL.")
     print("="*50)
 
