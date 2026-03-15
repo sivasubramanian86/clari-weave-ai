@@ -88,26 +88,51 @@ async def demo_session(websocket: WebSocket):
         # Demo Controller: Sends timed prompts to keep narration moving for 4 minutes
         async def demo_controller():
             stages = [
-                "Proceed to Section 1: Welcome & Vision. Talk slowly for 60 seconds.",
-                "Proceed to Section 2: Live Interaction & Emotion. Talk slowly for 60 seconds.",
-                "Proceed to Section 3: Visual Intelligence & Grounded Wellness. Talk slowly for 60 seconds.",
-                "Proceed to Section 4: Mind Mesh & system architecture. Talk slowly for 60 seconds.",
-                "Final Closure & Vision for the future. You are at minute 4. Wrap up now."
+                {
+                    "instruction": "Section 1: [0:00 - 0:50] WELCOME & THE PROBLEM OF MENTAL OVERHANG. Greet with warmth. Talk about 'Mental Overhang'. Fill 50 seconds.",
+                    "text": "Welcome to ClariWeave — I'm Clara, your AI orchestration mind. Today, we're exploring a new frontier where technology doesn't just process data, but unweaves mental chaos into clarity. In our hyper-connected lives, we often suffer from 'Mental Overhang'. It's that subtle paralysis caused by a messy desk, a thousand open tabs, and a racing mind. ClariWeave was born from the inspiration to turn the 'Black Box' of AI into a 'Glass Box' of empathy.",
+                    "wait": 50
+                },
+                {
+                    "name": "WOW_MOMENT",
+                    "instruction": "Section 2: [0:50 - 1:45] LIVE MULTIMODAL LOOP. Explain the Tech: Gemini Multimodal Live API, zero latency, living hologram. Fill 55 seconds.",
+                    "text": "Right now, using the Gemini Multimodal Live API, I am listening to you with near-zero latency. But notice my hologram. It isn't just a static image; it's a living reflection of our connection. The color, the pulse, and the breath of my visual form shift in real-time as I analyze your sentiment and stress levels. We're moving beyond text, reaching for non-verbal validation through technology.",
+                    "wait": 55
+                },
+                {
+                    "name": "VISUAL",
+                    "instruction": "Section 3: [1:45 - 2:40] VISUAL COGNITION & GROUNDED WELLNESS. Transition to Camera. Talk about visual stressors and cluttered workspace. Fill 55 seconds.",
+                    "text": "Technology should be grounded in the physical world. If you look at our Live Camera tab, I can see your surroundings. I don't just 'see' objects; I search for visual stressors. If I notice a cluttered workspace or tangled charging cables, I won't just ignore them. I'll proactively suggest a micro-action — like tucking one cable away — because a clear space is a clear mind. This is the power of visual grounding combined with empathic reasoning.",
+                    "wait": 55
+                },
+                {
+                    "name": "ARCHITECTURE",
+                    "instruction": "Section 4: [2:40 - 3:30] THE AGENT MESH & MIND MESH. Explain Agent Mesh, Weaver, Archivist, Analyst, Guardian. Glass Box philosophy. Fill 50 seconds.",
+                    "text": "Now, let's look under the hood at our 'Mind Mesh'. ClariWeave is not a single model. It is a decentralized network of specialists. While I coordinate, the Weaver handles your emotional grounding, the Archivist manages your history using RAG, and the Analyst synthesizes your metrics. This transparency is our 'Glass Box' philosophy — you can see exactly how we reason, collaborate, and protect your safety through our Guardian agent.",
+                    "wait": 50
+                },
+                {
+                    "name": "FUTURE",
+                    "instruction": "Section 5: [3:30 - 4:10] PERSISTENCE, INSIGHTS & THE FUTURE. Talk about Upload center, gallery, future integration. Closing. Fill 40 seconds.",
+                    "text": "Our Upload center allows you to process past memos or snapshots, and our persistence layer ensures your 'Recently Analyzed' gallery is always there to track your growth across sessions. In the future, we envision ClariWeave integrated into biometrics and your entire home environment. ClariWeave — unweaving chaos into clarity, in real time. Powered by Google Gemini and the ADK. Thank you for embarking on this journey with me. How can I help you find focus today?",
+                    "wait": 5
+                }
             ]
             try:
-                for stage_text in stages:
+                for stage in stages:
                     if websocket.client_state.value == 3: break # Disconnected
-                    logger.info(f"Triggering Demo Stage: {stage_text}")
+                    instruction = stage["instruction"]
+                    script_text = stage["text"]
+                    logger.info(f"Triggering Demo Stage: {instruction}")
                     try:
                         live_request_queue.send_content(types.Content(
                             role="user",
-                            parts=[types.Part.from_text(text=stage_text)]
+                            parts=[types.Part.from_text(text=f"NARRATE THIS SCRIPT SLOWLY:\n{script_text}\n\nCONTEXT: {instruction}")]
                         ))
                     except Exception as e:
                         logger.warning(f"Failed to send demo stage content: {e}")
                     
-                    # Sleep for 60-65 seconds to ensure we hit the 4 min mark
-                    await asyncio.sleep(60 if "Final" not in stage_text else 5)
+                    await asyncio.sleep(stage["wait"])
             except asyncio.CancelledError:
                 pass
             except Exception as e:
