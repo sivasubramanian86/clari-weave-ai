@@ -22,6 +22,6 @@ def get_clariweave_agent() -> Agent:
         generate_content_config=types.GenerateContentConfig(
             response_modalities=[types.Modality.AUDIO]
         ),
-        instruction=COORDINATOR_INSTRUCTION + CLARA_DEMO_INSTRUCTION,
+        instruction=COORDINATOR_INSTRUCTION,
         tools=TOOLS,
     )
